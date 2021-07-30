@@ -1,4 +1,4 @@
-package jwt_mw
+package jwtmw
 
 import "fmt"
 

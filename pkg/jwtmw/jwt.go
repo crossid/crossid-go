@@ -1,7 +1,7 @@
 /*
-Package jwt_mw provides an HTTP middleware that parses a JWT token and put it in context
+Package jwtmw provides an HTTP middleware that parses a JWT token and put it in context
 */
-package jwt_mw
+package jwtmw
 
 import (
 	"context"
