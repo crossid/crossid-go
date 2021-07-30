@@ -186,12 +186,13 @@ func TestJWT_Handler(t *testing.T) {
 			}),
 			opts: &JwtMiddlewareOpts{
 				KeyFunc: validKeyFunc,
-				Validate: func(to *jwt.Token, c jwt.Claims) error {
+				Validate: func(_ *http.Request, to *jwt.Token, c jwt.Claims) error {
 					cl := c.(jwt.MapClaims)
 					assertTrue(t, cl.VerifyIssuer("crossid.io", true), "invalid issuer")
 					assertTrue(t, !cl.VerifyAudience("foo", true), "invalid issuer")
 					assertTrue(t, cl.VerifyAudience("acme.io", true), "invalid audience")
 					assertTrue(t, !cl.VerifyAudience("foo", true), "invalid audience")
+					assertTrue(t, to.Valid, "token should be valid")
 					return nil
 				},
 			},
