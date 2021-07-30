@@ -17,7 +17,7 @@ type JWT struct {
 
 func NewJWT(opts ...*JwtMiddlewareOpts) *JWT {
 	return &JWT{
-		opts: *MergeOpts(opts...),
+		opts: *mergeOpts(opts...),
 	}
 }
 

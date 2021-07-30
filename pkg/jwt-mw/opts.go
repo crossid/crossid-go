@@ -51,7 +51,7 @@ type JwtMiddlewareOpts struct {
 	TokenCtxKey interface{}
 }
 
-func MergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
+func mergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
 	opt := JwtMiddlewareOpts{
 		TokenFromRequest: BearerTokenFromRequest,
 		Optional:         false,
