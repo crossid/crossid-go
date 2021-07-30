@@ -23,7 +23,7 @@ type errorWriter func(w http.ResponseWriter, r *http.Request, err error)
 type logger func(level Level, format string, args ...interface{})
 
 // tokenValidator validates that t and c are valid.
-type tokenValidator func(t *jwt.Token, c jwt.Claims) error
+type tokenValidator func(r *http.Request, t *jwt.Token, c jwt.Claims) error
 
 // JwtMiddlewareOpts describes the options of the JWTMiddleware
 type JwtMiddlewareOpts struct {

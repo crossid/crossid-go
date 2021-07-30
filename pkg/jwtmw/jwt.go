@@ -50,7 +50,7 @@ func (j *JWT) Validate(r *http.Request) (*jwt.Token, error) {
 	}
 
 	if j.opts.Validate != nil {
-		if err := j.opts.Validate(pt, c); err != nil {
+		if err := j.opts.Validate(r, pt, c); err != nil {
 			return nil, ErrInvalidToken
 		}
 	}

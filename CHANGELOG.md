@@ -1,3 +1,11 @@
+## 0.0.3
+
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.0.2...v0.0.3)
+
+### Minor Changes
+
+- jwtmw - pass http.Request in tokenValidator.
+
 ## 0.0.2
 
 [All Changes](https://github.com/crossid/crossid-go/compare/v0.0.1...v0.0.2)
