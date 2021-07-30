@@ -1,0 +1,77 @@
+/*
+Package jwt_mw provides an HTTP middleware that parses a JWT token and put it in context
+*/
+package jwt_mw
+
+import (
+	"context"
+	"errors"
+	"github.com/golang-jwt/jwt"
+	"net/http"
+)
+
+// JWT returns a new middleware that performs JWT validations.
+type JWT struct {
+	opts JwtMiddlewareOpts
+}
+
+func NewJWT(opts ...*JwtMiddlewareOpts) *JWT {
+	return &JWT{
+		opts: *MergeOpts(opts...),
+	}
+}
+
+func (j *JWT) Validate(r *http.Request) (*jwt.Token, error) {
+	bearer, err := j.opts.TokenFromRequest(r)
+	if err != nil {
+		j.opts.Logger(Info, "error extracting token: %s", err)
+		return nil, ErrExtractingToken
+	}
+
+	if bearer == "" {
+		j.opts.Logger(Info, "missing token")
+		return nil, ErrMissingToken
+	}
+
+	// validates and return a token
+	var c = j.opts.Claims
+	if c == nil {
+		c = jwt.MapClaims{}
+	}
+	pt, err := jwt.ParseWithClaims(bearer, c, j.opts.KeyFunc)
+	if err != nil {
+		j.opts.Logger(Info, "error parsing token: %v", err)
+		return nil, ErrInvalidToken
+	}
+
+	if !pt.Valid {
+		j.opts.Logger(Info, "invalid token (typically due to claims invalidation)")
+		return nil, ErrInvalidToken
+	}
+
+	if j.opts.Validate != nil {
+		if err := j.opts.Validate(pt, c); err != nil {
+			return nil, ErrInvalidToken
+		}
+	}
+
+	return pt, nil
+}
+
+func (j *JWT) Handler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tok, err := j.Validate(r)
+		if err != nil {
+			if j.opts.Optional && errors.Is(err, ErrMissingToken) {
+				j.opts.Logger(Debug, "token is missing")
+				h.ServeHTTP(w, r)
+				return
+			}
+
+			j.opts.ErrorWriter(w, r, err)
+			return
+		}
+
+		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), j.opts.TokenCtxKey, tok)))
+	})
+}
