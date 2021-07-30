@@ -81,6 +81,9 @@ func mergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
 		if o.Optional {
 			opt.Optional = o.Optional
 		}
+		if o.ErrorWriter != nil {
+			opt.ErrorWriter = o.ErrorWriter
+		}
 		if o.Logger != nil {
 			opt.Logger = o.Logger
 		}

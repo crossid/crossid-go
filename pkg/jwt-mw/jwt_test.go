@@ -81,6 +81,26 @@ func TestJWT_Handler(t *testing.T) {
 			},
 		},
 		{
+			name:        "custom error writer",
+			shouldBlock: true,
+			opts: &JwtMiddlewareOpts{ErrorWriter: func(w http.ResponseWriter, r *http.Request, err error) {
+				if err != ErrMissingToken {
+					t.Fatalf("expected ErrMissingToken but got %s", err)
+				}
+
+				w.WriteHeader(http.StatusUnauthorized)
+				_, err = w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+				assertNoError(t, err)
+			}},
+			resp: func(resp *http.Response) {
+				b, err := ioutil.ReadAll(resp.Body)
+				assertNoError(t, err)
+				if v := gjson.GetBytes(b, "error").String(); v != ErrMissingToken.Error() {
+					t.Fatalf("expected ErrMissingToken but got %s", v)
+				}
+			},
+		},
+		{
 			name:        "should block when no token and optional=false",
 			shouldBlock: true,
 		},
