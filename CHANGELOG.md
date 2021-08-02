@@ -1,3 +1,11 @@
+## 0.0.5
+
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.0.4...v0.0.5)
+
+### Minor Changes
+
+- jwtmw - Enhance context using the `WithContext` opt.
+
 ## 0.0.4
 
 [All Changes](https://github.com/crossid/crossid-go/compare/v0.0.3...v0.0.4)

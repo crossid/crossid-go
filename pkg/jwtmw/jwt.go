@@ -80,6 +80,11 @@ func (j *JWT) Handler(h http.Handler) http.Handler {
 			return
 		}
 
-		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), j.opts.TokenCtxKey, tok)))
+		ctx, err := j.opts.WithContext(context.WithValue(r.Context(), j.opts.TokenCtxKey, tok))
+		if err != nil {
+			j.opts.ErrorWriter(w, r, err)
+			return
+		}
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
