@@ -1,3 +1,12 @@
+## 0.0.4
+
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.0.3...v0.0.4)
+
+### Minor Changes
+
+- jwtmw - pass ctx to KeyFunc and.
+- jwtmw - support SigningMethod for alg assertion.
+
 ## 0.0.3
 
 [All Changes](https://github.com/crossid/crossid-go/compare/v0.0.2...v0.0.3)
