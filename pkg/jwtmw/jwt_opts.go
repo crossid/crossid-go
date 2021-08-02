@@ -41,6 +41,9 @@ type JwtMiddlewareOpts struct {
 	Logger logger
 	// TokenCtxKey is the context key of a valid token that is put in the request's context.
 	TokenCtxKey interface{}
+	// WithContext is a way to put another context in request chain.
+	// this let consumer enhances context with a key such as user loaded from db, etc.
+	WithContext func(ctx context.Context) (context.Context, error)
 }
 
 func mergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
@@ -52,6 +55,7 @@ func mergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
 		},
 		Logger:      func(level Level, format string, args ...interface{}) {},
 		TokenCtxKey: TokenCtxKey,
+		WithContext: func(c context.Context) (context.Context, error) { return c, nil },
 	}
 
 	for _, o := range opts {
@@ -84,6 +88,9 @@ func mergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
 		}
 		if o.TokenCtxKey != nil {
 			opt.TokenCtxKey = o.TokenCtxKey
+		}
+		if o.WithContext != nil {
+			opt.WithContext = o.WithContext
 		}
 	}
 

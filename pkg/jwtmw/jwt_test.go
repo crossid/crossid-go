@@ -21,6 +21,8 @@ var secret = []byte("secret")
 
 var prkey, _ = rsa.GenerateKey(rand.Reader, 2048)
 
+type fooKey struct{}
+
 var validKeyFuncHS256 = func(ctx context.Context, token *jwt.Token) (interface{}, error) {
 	return secret, nil
 }
@@ -53,11 +55,12 @@ func (f *okClaim) Valid() error {
 
 func TestJWT_Handler(t *testing.T) {
 	for k, tc := range []struct {
-		name        string
-		opts        *JwtMiddlewareOpts
-		jwt         string
-		shouldBlock bool
-		resp        func(resp *http.Response)
+		name           string
+		opts           *JwtMiddlewareOpts
+		jwt            string
+		shouldBlock    bool
+		resp           func(resp *http.Response)
+		inspectRequest func(r *http.Request) error
 	}{
 		{
 			name:        "should continue with a valid jwt and put parsed token in ctx",
@@ -232,10 +235,32 @@ func TestJWT_Handler(t *testing.T) {
 				SigningMethod: jwt.SigningMethodRS256,
 			},
 		},
+		{
+			name: "withContext",
+			jwt: signHS256JWT(t, jwt.StandardClaims{
+				Issuer:   "crossid.io",
+				Audience: "acme.io",
+			}),
+			opts: &JwtMiddlewareOpts{
+				KeyFunc: validKeyFuncHS256,
+				WithContext: func(ctx context.Context) (context.Context, error) {
+					return context.WithValue(ctx, fooKey{}, "bar"), nil
+				},
+			},
+			inspectRequest: func(r *http.Request) error {
+				if r.Context().Value(fooKey{}) != "bar" {
+					return fmt.Errorf("context value key 'foo' is not 'bar'")
+				}
+				return nil
+			},
+		},
 	} {
 		t.Run(fmt.Sprintf("case=%d", k), func(t *testing.T) {
 			visited := false
 			hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tc.inspectRequest != nil {
+					testx.AssertNoError(t, tc.inspectRequest(r))
+				}
 				visited = true
 				tok := r.Context().Value(TokenCtxKey)
 				if err := json.NewEncoder(w).Encode(tok); err != nil {
