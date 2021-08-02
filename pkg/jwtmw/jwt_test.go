@@ -1,8 +1,12 @@
 package jwtmw
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"github.com/crossid/crossid-go/pkg/x/testx"
 	"github.com/golang-jwt/jwt"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
@@ -15,8 +19,16 @@ import (
 
 var secret = []byte("secret")
 
-var validKeyFunc = func(token *jwt.Token) (interface{}, error) {
+var prkey, _ = rsa.GenerateKey(rand.Reader, 2048)
+
+var validKeyFuncHS256 = func(ctx context.Context, token *jwt.Token) (interface{}, error) {
 	return secret, nil
+}
+
+func newValidKeyFuncRS256(key *rsa.PublicKey) Keyfunc {
+	return func(ctx context.Context, token *jwt.Token) (interface{}, error) {
+		return key, nil
+	}
 }
 
 type fooClaim struct {
@@ -50,14 +62,14 @@ func TestJWT_Handler(t *testing.T) {
 		{
 			name:        "should continue with a valid jwt and put parsed token in ctx",
 			shouldBlock: false,
-			jwt:         signJWT(t, jwt.MapClaims{"foo": "bar"}),
+			jwt:         signHS256JWT(t, jwt.MapClaims{"foo": "bar"}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 			},
 			resp: func(resp *http.Response) {
 				b, err := ioutil.ReadAll(resp.Body)
-				assertNoError(t, err)
-				assertTrue(t, gjson.Get(string(b), "Valid").Bool(), "invalid jwt")
+				testx.AssertNoError(t, err)
+				testx.AssertTrue(t, gjson.Get(string(b), "Valid").Bool(), "invalid jwt")
 				if gjson.Get(string(b), "Claims").String() != `{"foo":"bar"}` {
 					t.Fatalf("claims mismatch")
 				}
@@ -66,15 +78,15 @@ func TestJWT_Handler(t *testing.T) {
 		{
 			name:        "should decode into custom claims struct",
 			shouldBlock: false,
-			jwt:         signJWT(t, jwt.MapClaims{"thefoo": "bar"}),
+			jwt:         signHS256JWT(t, jwt.MapClaims{"thefoo": "bar"}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 				Claims:  &fooClaim{},
 			},
 			resp: func(resp *http.Response) {
 				b, err := ioutil.ReadAll(resp.Body)
-				assertNoError(t, err)
-				assertTrue(t, gjson.Get(string(b), "Valid").Bool(), "invalid jwt")
+				testx.AssertNoError(t, err)
+				testx.AssertTrue(t, gjson.Get(string(b), "Valid").Bool(), "invalid jwt")
 				if gjson.Get(string(b), "Claims").String() != `{"thefoo":"bar"}` {
 					t.Fatalf("claims mismatch")
 				}
@@ -90,11 +102,11 @@ func TestJWT_Handler(t *testing.T) {
 
 				w.WriteHeader(http.StatusUnauthorized)
 				_, err = w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
-				assertNoError(t, err)
+				testx.AssertNoError(t, err)
 			}},
 			resp: func(resp *http.Response) {
 				b, err := ioutil.ReadAll(resp.Body)
-				assertNoError(t, err)
+				testx.AssertNoError(t, err)
 				if v := gjson.GetBytes(b, "error").String(); v != ErrMissingToken.Error() {
 					t.Fatalf("expected ErrMissingToken but got %s", v)
 				}
@@ -130,71 +142,94 @@ func TestJWT_Handler(t *testing.T) {
 		{
 			name:        "should fail if claims.Valid() is false",
 			shouldBlock: true,
-			jwt:         signJWT(t, nil),
+			jwt:         signHS256JWT(t, nil),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 				Claims:  &fooClaim{},
 			},
 		},
 		{
 			name:        "should fail if exp < now",
 			shouldBlock: true,
-			jwt: signJWT(t, jwt.StandardClaims{
+			jwt: signHS256JWT(t, jwt.StandardClaims{
 				ExpiresAt: time.Now().Add(-1 * time.Second).Unix(),
 			}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 			},
 		},
 		{
 			name:        "should fail if iat > now",
 			shouldBlock: true,
-			jwt: signJWT(t, jwt.StandardClaims{
+			jwt: signHS256JWT(t, jwt.StandardClaims{
 				IssuedAt: time.Now().Add(2 * time.Second).Unix(),
 			}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 			},
 		},
 		{
 			name:        "should fail if nbf > now",
 			shouldBlock: true,
-			jwt: signJWT(t, jwt.StandardClaims{
+			jwt: signHS256JWT(t, jwt.StandardClaims{
 				NotBefore: time.Now().Add(2 * time.Second).Unix(),
 			}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 			},
 		},
 		{
 			name:        "should not fail if exp < now with custom claim struct",
 			shouldBlock: false,
-			jwt: signJWT(t, jwt.StandardClaims{
+			jwt: signHS256JWT(t, jwt.StandardClaims{
 				ExpiresAt: time.Now().Add(-1 * time.Second).Unix(),
 			}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 				Claims:  &okClaim{},
 			},
 		},
 		{
 			name:        "assert audience and issuer",
 			shouldBlock: false,
-			jwt: signJWT(t, jwt.StandardClaims{
+			jwt: signHS256JWT(t, jwt.StandardClaims{
 				Issuer:   "crossid.io",
 				Audience: "acme.io",
 			}),
 			opts: &JwtMiddlewareOpts{
-				KeyFunc: validKeyFunc,
+				KeyFunc: validKeyFuncHS256,
 				Validate: func(_ *http.Request, to *jwt.Token, c jwt.Claims) error {
 					cl := c.(jwt.MapClaims)
-					assertTrue(t, cl.VerifyIssuer("crossid.io", true), "invalid issuer")
-					assertTrue(t, !cl.VerifyAudience("foo", true), "invalid issuer")
-					assertTrue(t, cl.VerifyAudience("acme.io", true), "invalid audience")
-					assertTrue(t, !cl.VerifyAudience("foo", true), "invalid audience")
-					assertTrue(t, to.Valid, "token should be valid")
+					testx.AssertTrue(t, cl.VerifyIssuer("crossid.io", true), "invalid issuer")
+					testx.AssertTrue(t, !cl.VerifyAudience("foo", true), "invalid issuer")
+					testx.AssertTrue(t, cl.VerifyAudience("acme.io", true), "invalid audience")
+					testx.AssertTrue(t, !cl.VerifyAudience("foo", true), "invalid audience")
+					testx.AssertTrue(t, to.Valid, "token should be valid")
 					return nil
 				},
+			},
+		},
+		{
+			name: "should sign with RS256",
+			jwt: signRS256JWT(t, prkey, jwt.StandardClaims{
+				Issuer:   "crossid.io",
+				Audience: "acme.io",
+			}),
+			opts: &JwtMiddlewareOpts{
+				KeyFunc:       newValidKeyFuncRS256(&prkey.PublicKey),
+				SigningMethod: jwt.SigningMethodRS256,
+			},
+		},
+		{
+			name:        "should fail when JWT signed with different algo (HS256) than expected (RS256)",
+			shouldBlock: true,
+			jwt: signHS256JWT(t, jwt.StandardClaims{
+				Issuer:   "crossid.io",
+				Audience: "acme.io",
+			}),
+			opts: &JwtMiddlewareOpts{
+				KeyFunc:       validKeyFuncHS256,
+				SigningMethod: jwt.SigningMethodRS256,
 			},
 		},
 	} {
@@ -235,7 +270,7 @@ func TestJWT_Handler(t *testing.T) {
 	}
 }
 
-func signJWT(t *testing.T, claims jwt.Claims) string {
+func signHS256JWT(t *testing.T, claims jwt.Claims) string {
 	tok := jwt.New(jwt.SigningMethodHS256)
 	tok.Claims = claims
 	b, err := tok.SignedString(secret)
@@ -245,14 +280,10 @@ func signJWT(t *testing.T, claims jwt.Claims) string {
 	return fmt.Sprintf("%s %s", BearerPrefix, b)
 }
 
-func assertNoError(t *testing.T, err error) {
-	if err != nil {
-		t.Fatalf("expected no error but got %s", err)
-	}
-}
-
-func assertTrue(t *testing.T, v bool, msg string) {
-	if !v {
-		t.Fatalf(msg)
-	}
+func signRS256JWT(t *testing.T, key *rsa.PrivateKey, c jwt.Claims) string {
+	jt := jwt.New(jwt.GetSigningMethod(jwt.SigningMethodRS256.Name))
+	jt.Claims = c
+	b, err := jt.SignedString(key)
+	testx.AssertNoError(t, err)
+	return fmt.Sprintf("%s %s", BearerPrefix, b)
 }

@@ -38,9 +38,17 @@ func (j *JWT) Validate(r *http.Request) (*jwt.Token, error) {
 	if c == nil {
 		c = jwt.MapClaims{}
 	}
-	pt, err := jwt.ParseWithClaims(bearer, c, j.opts.KeyFunc)
+
+	pt, err := jwt.ParseWithClaims(bearer, c, func(t *jwt.Token) (interface{}, error) {
+		return j.opts.KeyFunc(r.Context(), t)
+	})
 	if err != nil {
 		j.opts.Logger(Info, "error parsing token: %v", err)
+		return nil, ErrInvalidToken
+	}
+
+	if j.opts.SigningMethod != nil && j.opts.SigningMethod.Alg() != pt.Header["alg"] {
+		j.opts.Logger(Info, "invalid signing algorithm, expected '%s' but got '%s'", j.opts.SigningMethod.Alg(), pt.Header["alg"])
 		return nil, ErrInvalidToken
 	}
 

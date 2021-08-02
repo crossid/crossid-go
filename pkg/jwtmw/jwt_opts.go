@@ -1,29 +1,19 @@
 package jwtmw
 
 import (
+	"context"
 	"github.com/golang-jwt/jwt"
 	"net/http"
-)
-
-type Level int
-
-const (
-	Debug Level = iota
-	Info
 )
 
 const (
 	TokenCtxKey = "crossidTokenKey"
 )
 
-// errorWriter writes an error into w
-type errorWriter func(w http.ResponseWriter, r *http.Request, err error)
-
-// logger logs a message, compatible with log.Printf
-type logger func(level Level, format string, args ...interface{})
-
 // tokenValidator validates that t and c are valid.
 type tokenValidator func(r *http.Request, t *jwt.Token, c jwt.Claims) error
+
+type Keyfunc = func(ctx context.Context, t *jwt.Token) (interface{}, error)
 
 // JwtMiddlewareOpts describes the options of the JWTMiddleware
 type JwtMiddlewareOpts struct {
@@ -31,7 +21,9 @@ type JwtMiddlewareOpts struct {
 	TokenFromRequest tokenFromRequest
 	// KeyFunc receives the parsed token and should return the key for validating.
 	// this can be a secret or a key
-	KeyFunc jwt.Keyfunc
+	KeyFunc Keyfunc
+	// SigningMethod defines the algorithm that should be used when verifying tokens.
+	SigningMethod jwt.SigningMethod
 	// Validate validates that the parsed token and claims are valid
 	Validate tokenValidator
 	// Claims will contain the JWT claims, decoded into the provided struct by reference.
@@ -68,6 +60,9 @@ func mergeOpts(opts ...*JwtMiddlewareOpts) *JwtMiddlewareOpts {
 		}
 		if o.TokenFromRequest != nil {
 			opt.TokenFromRequest = o.TokenFromRequest
+		}
+		if o.SigningMethod != nil {
+			opt.SigningMethod = o.SigningMethod
 		}
 		if o.KeyFunc != nil {
 			opt.KeyFunc = o.KeyFunc
