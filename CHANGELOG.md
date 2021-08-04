@@ -1,3 +1,11 @@
+## 0.1.1
+
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.1.0...v0.1.1)
+
+### Minor Changes
+
+- jwtmw - Log errors.
+
 ## 0.1.0
 
 [All Changes](https://github.com/crossid/crossid-go/compare/v0.0.5...v0.1.0)

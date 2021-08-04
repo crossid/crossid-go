@@ -59,6 +59,7 @@ func (j *JWT) Validate(r *http.Request) (*jwt.Token, error) {
 
 	if j.opts.Validate != nil {
 		if err := j.opts.Validate(r, pt, c); err != nil {
+			j.opts.Logger(Info, "custom validation failed: %s", err)
 			return nil, ErrInvalidToken
 		}
 	}
@@ -82,6 +83,7 @@ func (j *JWT) Handler(h http.Handler) http.Handler {
 
 		ctx, err := j.opts.WithContext(context.WithValue(r.Context(), j.opts.TokenCtxKey, tok))
 		if err != nil {
+			j.opts.Logger(Debug, "WithContext returned error: %s", err)
 			j.opts.ErrorWriter(w, r, err)
 			return
 		}
