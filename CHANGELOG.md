@@ -1,3 +1,11 @@
+## 0.1.0
+
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.0.5...v0.1.0)
+
+### Major Changes
+
+- jwtmw - `WithScopes` middleware to protect endpoints with JWT scopes.
+
 ## 0.0.5
 
 [All Changes](https://github.com/crossid/crossid-go/compare/v0.0.4...v0.0.5)
