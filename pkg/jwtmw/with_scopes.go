@@ -13,8 +13,15 @@ func DefaultClaimsFromToken(ctx context.Context, t *jwt.Token) ([]string, error)
 	switch v := t.Claims.(type) {
 	case jwt.MapClaims:
 		scpv := v[ScopesClaim]
+
 		if arr, ok := scpv.([]string); ok {
 			return arr, nil
+		} else if arr, ok := scpv.([]interface{}); ok {
+			strs := make([]string, len(arr))
+			for i, s := range arr {
+				strs[i] = s.(string)
+			}
+			return strs, nil
 		}
 
 		return []string{}, nil
