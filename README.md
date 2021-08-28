@@ -9,4 +9,4 @@ Various handful authentication tools for the go language.
 ## Examples
 
 - [login](examples/login) OAuth2 login flow.
-- [jwtmw](examples/jwtmw/jwk.go) Protect your app with OAuth2 JWK token.
+- [jwtmw](examples/jwtmw_jwk/main.go) Protect your endpoints with tokens issued by an OAuth2 auth server.

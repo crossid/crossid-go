@@ -12,8 +12,10 @@ import (
 )
 
 // main is an example of an http server that protect a route by a OAuth2 JWT.
-// run example by: go run jwtmw/jwk.go --jwks-endpoint https://<tenant>.crossid.io/oauth2/.well-known/jwks.json
-
+// before endpoint is invoked, a middleware ensures the token is valid and that the user is assigned to the relevant scopes.
+//
+//
+// run example by: go run jwtmw_jwk/main.go --jwks-endpoint https://<tenant>.crossid.io/oauth2/.well-known/jwks.json
 // to get a token, see examples/login folder
 // once you have a token run:
 // curl -i  http://0.0.0.0:3000 -H "Authorization: Bearer <TOKEN>"
@@ -45,6 +47,10 @@ func main() {
 		},
 	})
 
+	// Create a middleware that ensures token has the "openid" and "profile" scope.
+	withScopes := jwtmw.WithScopes("openid", "profile")
+
+	// Our protected handler
 	var protectedHandler = http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
 		// tok is the verified JWT token
 		tok := req.Context().Value(jwtmw.TokenCtxKey)
@@ -58,8 +64,9 @@ func main() {
 		writer.WriteHeader(200)
 	})
 
-	// wrap handler with auth middleware
-	app := authmw.Handler(protectedHandler)
+	// wrap handler with auth middlewares
+	app := authmw.Handler(withScopes(protectedHandler))
+
 	fmt.Println("serving on 0.0.0.0:3000")
 	if err = http.ListenAndServe("0.0.0.0:3000", app); err != nil {
 		panic(err.Error())
