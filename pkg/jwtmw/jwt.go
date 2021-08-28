@@ -6,7 +6,7 @@ package jwtmw
 import (
 	"context"
 	"errors"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 )
 

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/crossid/crossid-go/pkg/x/testx"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"net/http"
