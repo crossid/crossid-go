@@ -1,10 +1,16 @@
-## 0.1.1
+## 0.2.0
 
-[All Changes](https://github.com/crossid/crossid-go/compare/v0.1.0...v0.1.1)
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.1.0...v0.2.0)
+
+### Major Changes
+
+- use github.com/golang-jwt/jwt/v4
 
 ### Minor Changes
 
 - jwtmw - Log errors.
+- general examples.
+- echo example.
 
 ## 0.1.0
 
