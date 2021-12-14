@@ -1,3 +1,11 @@
+## 0.3.0
+
+[All Changes](https://github.com/crossid/crossid-go/compare/v0.2.0...v0.3.0)
+
+### Major Changes
+
+- jwtmw - `WithScopes` middleware support for custom scope checker.
+
 ## 0.2.0
 
 [All Changes](https://github.com/crossid/crossid-go/compare/v0.1.0...v0.2.0)

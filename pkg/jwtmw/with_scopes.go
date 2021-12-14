@@ -55,7 +55,7 @@ func WithScopesCustom(required []string, opt ...WithScopesOpt) func(next http.Ha
 				return
 			}
 
-			if err := opts.scopesChecker(required, cl); err != nil {
+			if err := opts.ScopesChecker(r.Context(), required, cl); err != nil {
 				opts.Logger(Info, "scopes errors: %s", err)
 				opts.ErrorWriter(w, r, ErrMissingClaim)
 				return

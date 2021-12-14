@@ -6,12 +6,7 @@ import (
 	"net/http"
 )
 
-type ConjunctionKind int
-
-const (
-	AND ConjunctionKind = iota
-	OR
-)
+type ScopesCheckerFunc func(ctx context.Context, required []string, candidates []string) error
 
 type withScopesOpts struct {
 	// TokenCtxKey is the context key of an authenticated token value, typically set by the JWT middleware.
@@ -21,23 +16,14 @@ type withScopesOpts struct {
 	// default implementation is naive as r.Context().Value(TokenCtxKey).(*jwt.Token)
 	TokenFromContext func(ctx context.Context) (*jwt.Token, error)
 	ClaimsFromToken  claimFromTokenFunc
-	// Conjunction defines whether all scopes (AND) are required or one (OR)
-	// of the provided scopes is sufficient for the request to be accepted.
-	Conjunction ConjunctionKind
 	// ErrorWriter writes an error into w
 	ErrorWriter errorWriter
 	// Logger logs various messages
 	Logger        logger
-	scopesChecker func(required []string, candidates []string) error
+	ScopesChecker ScopesCheckerFunc
 }
 
 type WithScopesOpt func(*withScopesOpts)
-
-func WithConjunction(c ConjunctionKind) WithScopesOpt {
-	return func(o *withScopesOpts) {
-		o.Conjunction = c
-	}
-}
 
 func WithErrorWriter(w errorWriter) WithScopesOpt {
 	return func(o *withScopesOpts) {
@@ -54,6 +40,12 @@ func WithTokenCtxKey(k interface{}) WithScopesOpt {
 func WithClaimsFromToken(f claimFromTokenFunc) WithScopesOpt {
 	return func(o *withScopesOpts) {
 		o.ClaimsFromToken = f
+	}
+}
+
+func WithScopesChecker(f ScopesCheckerFunc) WithScopesOpt {
+	return func(o *withScopesOpts) {
+		o.ScopesChecker = f
 	}
 }
 
@@ -89,10 +81,8 @@ func newWithScopesOpts(opts []WithScopesOpt) *withScopesOpts {
 		o.TokenCtxKey = TokenCtxKey
 	}
 
-	if o.Conjunction == OR {
-		o.scopesChecker = scopesCheckerOR
-	} else {
-		o.scopesChecker = scopesCheckerAND
+	if o.ScopesChecker == nil {
+		o.ScopesChecker = scopesCheckerAND
 	}
 
 	if o.ClaimsFromToken == nil {

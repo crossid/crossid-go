@@ -18,11 +18,18 @@ func claimsFromTok(ctx context.Context, t *jwt.Token) ([]string, error) {
 	return t.Claims.(*claimsWithScopes).Scopes, nil
 }
 
+type conjunctionKind int
+
+const (
+	AND conjunctionKind = iota
+	OR
+)
+
 func TestWithScopesCustom(t *testing.T) {
 	for k, tc := range []struct {
 		name           string
 		jwtopts        *JwtMiddlewareOpts
-		c              ConjunctionKind
+		c              conjunctionKind
 		r              []string
 		jwt            string
 		shouldBlock    bool
@@ -106,7 +113,14 @@ func TestWithScopesCustom(t *testing.T) {
 			}
 
 			jmw := NewJWT(tc.jwtopts)
-			smw := WithScopesCustom(tc.r, WithClaimsFromToken(claimsFromTok), WithConjunction(tc.c))
+			var scf ScopesCheckerFunc
+			if tc.c == AND {
+				scf = scopesCheckerAND
+			} else {
+				scf = ScopesCheckerOR
+			}
+
+			smw := WithScopesCustom(tc.r, WithClaimsFromToken(claimsFromTok), WithScopesChecker(scf))
 			visited := false
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				visited = true

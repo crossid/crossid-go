@@ -1,6 +1,9 @@
 package jwtmw
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestScopesCheckerOR(t *testing.T) {
 	for k, tc := range []struct {
@@ -76,7 +79,7 @@ func TestScopesCheckerOR(t *testing.T) {
 			v:    false,
 		},
 	} {
-		err := scopesCheckerOR(tc.r, tc.c)
+		err := ScopesCheckerOR(context.Background(), tc.r, tc.c)
 		if tc.v {
 			if err != nil {
 				t.Errorf("case %d=%s expected to be valid but got: %s", k, tc.name, err)
@@ -170,7 +173,7 @@ func TestScopesCheckerAND(t *testing.T) {
 			c:    []string{"f", "e", "d", "c", "b", "Z"},
 		},
 	} {
-		err := scopesCheckerAND(tc.r, tc.c)
+		err := scopesCheckerAND(context.Background(), tc.r, tc.c)
 		if tc.v {
 			if err != nil {
 				t.Errorf("case %d='%s' expected to be valid but got: %s", k, tc.name, err)
